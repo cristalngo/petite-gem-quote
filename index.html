@@ -82,7 +82,86 @@ h1{font-size:23px}
 const DEFAULT_SILVER_PRICE=234.1;const DEFAULT_GOLD_PRICE=14700;let products=[],results=[],selected=null,items=[],editingIndex=-1,resultsCollapsed=false;
 const $=id=>document.getElementById(id);const ids=['tabQuote','tabDb','quotePanel','dbPanel','dbCount','dbFile','exportDb','resetDb','dbStatus','searchCard','search','searchBtn','imageSearch','status','results','toggleResults','date','goldPrice','silverPrice','refreshPrices','priceStatus','clear','selected','item','material','weight','labor','stonePrice','stone','profit','override','preview','add','items','totalText','makeQuote','printQuote','quote','dbSearch','dbResults','newProduct','deleteProduct','dbEditorTitle','pName','pMaterial','pWeight','pLabor','pStonePrice','pStone','pStoneSize','pId','saveProduct','productStatus'];const el=Object.fromEntries(ids.map(id=>[id,$(id)]));
 function n(v){const x=parseFloat(String(v??'').replace(',','.').replace(/[^0-9.-]/g,''));return Number.isFinite(x)?x:0} function money(v){return new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(n(v))} function plain(v){const r=Math.round(n(v)*100)/100;return Number.isInteger(r)?String(r):String(r).replace(/0+$/,'').replace(/\.$/,'')} function quoteRound(v){const x=n(v);return x>0?Math.ceil(x/100)*100:0} function esc(v){return String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')} function norm(v){return String(v??'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()} function silver(m){const t=norm(m);return t.includes('bac')||t.includes('silver')} function age(m){const t=norm(m);if(t.includes('10k'))return 52;if(t.includes('14k'))return 68.5;if(t.includes('18k'))return 85;return 0} function infer(r){const t=norm(`${r?.material||''} ${r?.description||''} ${r?.product||''}`);if(t.includes('bac'))return 'Bạc';if(t.includes('18k')||n(r?.gold_age)==85)return 'Vàng 18K';if(t.includes('14k')||n(r?.gold_age)==68.5)return 'Vàng 14K';if(t.includes('10k')||n(r?.gold_age)==52)return 'Vàng 10K';if(t.includes('vang'))return 'Vàng 10K';return r?.material||''} function imageSrc(r){const u=String(r?.image_url||'');return u.startsWith('data:')?u:''}
-function marketNum(v){let s=String(v??'').replace(/[^\d,.]/g,'');if(!s)return 0;if(s.includes(',')&&s.includes('.'))s=s.replaceAll('.','').replace(',','.');else if((s.match(/\./g)||[]).length>1)s=s.replaceAll('.','');else if((s.match(/,/g)||[]).length>1)s=s.replaceAll(',','');else if(s.includes(','))s=s.replace(',','.');return n(s)} function normGold(v){v=marketNum(v);if(v>=1000000)return v/10000;if(v>=100000)return v/10;if(v>=10&&v<100)return v*1000;if(v>=100&&v<1000)return v*100;return v} function normSilver(v){v=marketNum(v);if(v>=100000)return v/1000;if(v>=1&&v<20)return v*1000;return v} async function fetchText(url){const tries=[url,'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];let last;for(const u of tries){try{const r=await fetch(u,{cache:'no-store'});if(r.ok)return await r.text();last=r.status}catch(e){last=e}}throw last||new Error('fetch failed')} function htmlText(x){return x.replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ')} function nums(t){return (t.match(/\d+(?:[.,]\d{1,3}){0,3}/g)||[]).map(marketNum).filter(Boolean)} async function loadOnlinePrices(){if(el.priceStatus)el.priceStatus.textContent='Đang cập nhật giá...';if(el.refreshPrices)el.refreshPrices.disabled=true;let gold=0,silverCay=0;try{const gj=await fetchText('https://edge-api.pnj.io/ecom-frontend/v1/get-gold-price?zone=00');const vals=(gj.match(/(?:sell|ban|bán|gia_ban|giaban|price_sell|sellprice|selling)["']?\s*:\s*["']?[\d,.]+/gi)||[]).map(normGold).filter(x=>x>=12000&&x<=25000);gold=vals.length?Math.max(...vals):0}catch(e){} if(!gold){try{const t=htmlText(await fetchText('https://www.pnj.com.vn/site/gia-vang'));const vals=nums(t).map(normGold).filter(x=>x>=12000&&x<=25000);gold=vals.length?Math.max(...vals):0}catch(e){}} try{const t=htmlText(await fetchText('https://giabac.vn/'));const vals=nums(t).map(normSilver).filter(x=>x>=1000&&x<=6000);silverCay=vals.length?Math.max(...vals):0}catch(e){} if(gold)el.goldPrice.value=plain(gold);if(silverCay)el.silverPrice.value=plain(silverCay/10);if(!gold&&!silverCay){if(el.priceStatus)el.priceStatus.textContent='Không tải được giá online, đang giữ giá trong app.';if(el.refreshPrices)el.refreshPrices.disabled=false;return} if(el.priceStatus)el.priceStatus.textContent=`Vàng ${money(el.goldPrice.value)}/chỉ · Bạc ${money(el.silverPrice.value)}/chỉ`;refresh();renderItems();if(el.refreshPrices)el.refreshPrices.disabled=false}
+function marketNum(v){
+  let s=String(v??'').replace(/[^\d,.]/g,'');
+  if(!s)return 0;
+  if(s.includes(',')&&s.includes('.'))s=s.replaceAll('.','').replace(',','.');
+  else if((s.match(/\./g)||[]).length>1)s=s.replaceAll('.','');
+  else if((s.match(/,/g)||[]).length>1)s=s.replaceAll(',','');
+  else if(s.includes(','))s=s.replace(',','.');
+  return n(s)
+}
+function normGold(v){
+  v=marketNum(v);
+  if(v>=1000000)return v/10000;
+  if(v>=100000)return v/10;
+  if(v>=10&&v<100)return v*1000;
+  if(v>=100&&v<1000)return v*100;
+  return v
+}
+async function fetchText(url){
+  const tries=[url,'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];
+  let last;
+  for(const u of tries){
+    try{
+      const r=await fetch(u,{cache:'no-store'});
+      if(r.ok)return await r.text();
+      last=r.status
+    }catch(e){last=e}
+  }
+  throw last||new Error('fetch failed')
+}
+function htmlText(x){
+  return x.replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ')
+}
+function nums(t){
+  return (t.match(/\d+(?:[.,]\d{1,3}){0,3}/g)||[]).map(marketNum).filter(Boolean)
+}
+function silverSellPerLuong(rawHtml){
+  const text=htmlText(rawHtml);
+  const rows=text.split(/(?=Bạc|BAC|Silver|SILVER)/);
+  const rowCandidates=[];
+  for(const row of rows){
+    const hay=norm(row);
+    if(!hay.includes('bac'))continue;
+    if(!(hay.includes('999')||hay.includes('phu quy')||hay.includes('mieng')||hay.includes('luong')))continue;
+    const vals=nums(row).filter(v=>v>=1000000&&v<=5000000);
+    if(vals.length)rowCandidates.push(Math.max(...vals));
+  }
+  const all=nums(text).filter(v=>v>=1000000&&v<=5000000);
+  return rowCandidates.length?Math.max(...rowCandidates):(all.length?Math.max(...all):0)
+}
+async function loadOnlinePrices(){
+  if(el.priceStatus)el.priceStatus.textContent='Đang cập nhật giá...';
+  if(el.refreshPrices)el.refreshPrices.disabled=true;
+  let gold=0,silverPerLuongVnd=0;
+  try{
+    const gj=await fetchText('https://edge-api.pnj.io/ecom-frontend/v1/get-gold-price?zone=00');
+    const vals=(gj.match(/(?:sell|ban|bán|gia_ban|giaban|price_sell|sellprice|selling)["']?\s*:\s*["']?[\d,.]+/gi)||[]).map(normGold).filter(x=>x>=12000&&x<=25000);
+    gold=vals.length?Math.max(...vals):0
+  }catch(e){}
+  if(!gold){
+    try{
+      const t=htmlText(await fetchText('https://www.pnj.com.vn/site/gia-vang'));
+      const vals=nums(t).map(normGold).filter(x=>x>=12000&&x<=25000);
+      gold=vals.length?Math.max(...vals):0
+    }catch(e){}
+  }
+  try{
+    silverPerLuongVnd=silverSellPerLuong(await fetchText('https://giabac.vn/'));
+  }catch(e){}
+  if(gold)el.goldPrice.value=plain(gold);
+  if(silverPerLuongVnd)el.silverPrice.value=plain(silverPerLuongVnd/10000);
+  if(!gold&&!silverPerLuongVnd){
+    if(el.priceStatus)el.priceStatus.textContent='Không tải được giá online, đang giữ giá trong app.';
+    if(el.refreshPrices)el.refreshPrices.disabled=false;
+    return
+  }
+  if(el.priceStatus)el.priceStatus.textContent=`Vàng ${money(el.goldPrice.value)}/chỉ · Bạc ${money(el.silverPrice.value)}/chỉ`;
+  refresh();
+  renderItems();
+  if(el.refreshPrices)el.refreshPrices.disabled=false
+}
 function bundledDb(){return JSON.parse(document.getElementById('bundled-db').textContent||'[]')}
 function loadDb(){let bundled=bundledDb();try{const raw=localStorage.getItem('petiteGemOfflineProductDB_v2');const local=raw?JSON.parse(raw):null;products=Array.isArray(local)&&local.length?local:bundled}catch(e){products=bundled}if(!Array.isArray(products)||!products.length)products=bundled;updateDbCount()} function saveDb(){localStorage.setItem('petiteGemOfflineProductDB_v2',JSON.stringify(products));updateDbCount()} function updateDbCount(){el.dbCount.textContent=products.length+' sản phẩm'}
 function words(v){return norm(v).split(/[^a-z0-9]+/).filter(Boolean)} function tokenHit(tok,arr){return arr.includes(tok)||tok.length>=4&&arr.some(w=>w.startsWith(tok))} function score(r,tokens){const name=norm(r.description||r.product||''),hay=norm([r.description,r.product,r.material,r.stone,r.stone_size,r.searchKey].join(' '));const nameWords=words(name),hayWords=words(hay);let s=0;for(const tok of tokens){if(tokenHit(tok,nameWords))s+=12;else if(tokenHit(tok,hayWords))s+=5;else return -1}const phrase=tokens.join(' ');if(name===phrase)s+=80;else if(name.startsWith(phrase))s+=45;else if(nameWords.slice(0,tokens.length).join(' ')===phrase)s+=30;else if(name.includes(phrase))s+=20;if(r.image_url)s+=2;return s}
