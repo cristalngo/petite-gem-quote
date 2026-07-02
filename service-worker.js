@@ -1,4 +1,4 @@
-const CACHE_NAME = 'petite-gem-quote-pwa-v4-20260630-quick-lines';
+const CACHE_NAME = 'petite-gem-quote-pwa-v6-20260702-clear-items-after-quote';
 const ASSETS = ['./', './index.html', './favicon.ico', './manifest.webmanifest', './icons/favicon-32.png', './icons/favicon-48.png', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -8,6 +8,11 @@ self.addEventListener('activate', event => {
 });
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
   event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
     const copy = response.clone();
     caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
