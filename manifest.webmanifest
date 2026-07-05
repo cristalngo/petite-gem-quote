@@ -1,13 +1,13 @@
 {
-  "name": "PG Designer",
-  "short_name": "PG Designer",
-  "description": "Dán yêu cầu thiết kế Petite Gem lên ảnh để gửi xưởng.",
+  "name": "Petite Gem Quote PWA",
+  "short_name": "Petite Quote",
+  "description": "Báo giá Petite Gem offline với product database local.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#fffdf8",
-  "theme_color": "#faf6ef",
+  "theme_color": "#0f766e",
   "icons": [
     {
       "src": "icons/icon-192.png",
