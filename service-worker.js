@@ -1,4 +1,4 @@
-const CACHE_NAME = 'petite-gem-quote-pwa-v8-20260705-profit-presets';
+const CACHE_NAME = 'petite-gem-quote-pwa-v3-20260709113221';
 const ASSETS = ['./', './index.html', './favicon.ico', './manifest.webmanifest', './icons/favicon-32.png', './icons/favicon-48.png', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
